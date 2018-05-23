@@ -24,6 +24,7 @@ type SSRNode struct {
 	Minx string `json:"obfs"`
 }
 
+// Store 讲配置信息存入json文件
 func (s *SSRNode) Store(path string) error {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0664)
 	if err != nil {

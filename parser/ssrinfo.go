@@ -29,6 +29,7 @@ func NewSSRInfo(ser *Service) *SSRInfo {
 	return s
 }
 
+// GetNodeByName 返回name对应的ssrnode
 func (s *SSRInfo) GetNodeByName(name string) *SSRNode {
 	for _, node := range s.Nodes {
 		if name == node.NodeName {
@@ -39,6 +40,7 @@ func (s *SSRInfo) GetNodeByName(name string) *SSRNode {
 	return nil
 }
 
+// UsedInfo 显示服务使用情况
 func (s *SSRInfo) UsedInfo() string {
 	res := ""
 	res += fmt.Sprintf("服务名称：%v\n", s.Name)

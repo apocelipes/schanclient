@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// JSONPath unmarshal/marshal时验证路径是否为绝对路径
 type JSONPath struct {
 	string
 }
@@ -34,6 +35,7 @@ func (jp *JSONPath) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + jp.string + "\""), nil
 }
 
+// AbsPath 返回对应的绝对路径
 func (jp *JSONPath) AbsPath() (string, error) {
 	if path.IsAbs(jp.string) {
 		return jp.string, nil

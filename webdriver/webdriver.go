@@ -20,7 +20,7 @@ func dropChromeLogs(s string, v ...interface{}) {
 func NewHeadless(ctx context.Context, starturl string) (*chromedp.CDP, error) {
 	select {
 	case <-ctx.Done():
-		return nil, errors.New("create canceled")
+		return nil, errors.New("canceled")
 	default:
 		run, err := runner.New(runner.Flag("headless", true),
 			runner.StartURL(starturl))
@@ -33,8 +33,9 @@ func NewHeadless(ctx context.Context, starturl string) (*chromedp.CDP, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		c, err := chromedp.New(ctx, chromedp.WithRunner(run), chromedp.WithErrorf(chromedp.LogFunc(dropChromeLogs)))
+		
+		drop := chromedp.LogFunc(dropChromeLogs)
+		c, err := chromedp.New(ctx, chromedp.WithRunner(run), chromedp.WithErrorf(drop))
 		if err != nil {
 			return nil, err
 		}
@@ -82,33 +83,4 @@ func GetDataPanel(url string, res *string) chromedp.Tasks {
 		chromedp.Sleep(1 * time.Second),
 		chromedp.OuterHTML("#tabOverview div.plugin", res, chromedp.ByQuery),
 	}
-}
-
-// ActionFunc
-func setAllCookies(ctx context.Context, h cdp.Executor) error {
-	// 获取cookie
-	cookies, err := network.GetAllCookies().Do(ctx, h)
-	if err != nil {
-		return err
-	}
-
-	for _, v := range cookies {
-		// 设置超时，TimeSinceEpoch是time.Time的自定义类型，做一下转换
-		expr := cdp.TimeSinceEpoch(time.Unix(int64(v.Expires), 0))
-		// 设置cookie属性，全部取自从服务器获取的cookie值
-		success, err := network.SetCookie(v.Name, v.Value).
-			WithExpires(&expr).
-			WithDomain(v.Domain).
-			WithPath(v.Path).
-			WithHTTPOnly(true).
-			Do(ctx, h)
-		if err != nil {
-			return err
-		}
-		if !success {
-			return errors.New("could not set cookie")
-		}
-	}
-
-	return nil
 }

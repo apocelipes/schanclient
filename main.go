@@ -24,11 +24,12 @@ func main() {
 	// 命令行参数
 	showInfo := flag.Bool("show-info", false, "show client's infomation.")
 	showUsed := flag.Bool("show-used", false, "show user's data use.")
-	showConf := flag.Bool("show-conf", false, "show current schanclient config.")
+	showConf := flag.Bool("show-conf", false, "show current ssrnode config.")
 	setNode := flag.String("set-node", "", "set SSR node to ssr_config_file.")
 	clientFlag := flag.String("d", "", "start, stop or restart the ssr client.")
 	flag.Parse()
 
+	// 信号处理
 	ctxt, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sig := make(chan os.Signal)
@@ -124,7 +125,6 @@ func main() {
 	}
 
 	if *showInfo {
-		// 执行动作
 		showServiceInfo(ctxt, c)
 		return
 	}
