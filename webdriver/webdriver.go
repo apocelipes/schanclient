@@ -5,8 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/chromedp/cdproto/cdp"
-	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/runner"
 
@@ -23,7 +21,8 @@ func NewHeadless(ctx context.Context, starturl string) (*chromedp.CDP, error) {
 		return nil, errors.New("canceled")
 	default:
 		run, err := runner.New(runner.Flag("headless", true),
-			runner.StartURL(starturl))
+			runner.URL(starturl),
+			runner.ProxyServer("http://127.0.0.1:8118"))
 
 		if err != nil {
 			return nil, err
@@ -34,8 +33,7 @@ func NewHeadless(ctx context.Context, starturl string) (*chromedp.CDP, error) {
 			return nil, err
 		}
 		
-		drop := chromedp.LogFunc(dropChromeLogs)
-		c, err := chromedp.New(ctx, chromedp.WithRunner(run), chromedp.WithErrorf(drop))
+		c, err := chromedp.New(ctx, chromedp.WithRunner(run), chromedp.WithErrorf(dropChromeLogs))
 		if err != nil {
 			return nil, err
 		}
