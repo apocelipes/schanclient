@@ -17,4 +17,4 @@ fi
 
 #build
 cd ..
-go install schanclient
+go build
