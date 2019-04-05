@@ -1,7 +1,7 @@
 package urls
 
 const (
-	AuthPath        = `https://www.schannel.net/clientarea.php`
-	RootPath        = `https://www.schannel.net/`
-	ServiceListPath = `https://www.schannel.net/clientarea.php?action=services`
+	AuthPath        = `https://sgchannel.cloud/clientarea.php`
+	RootPath        = `https://sgchannel.cloud/`
+	ServiceListPath = `https://sgchannel.cloud/clientarea.php?action=services`
 )

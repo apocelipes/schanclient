@@ -16,7 +16,6 @@ import (
 	"schanclient/parser"
 	_ "schanclient/pyclient"
 	"schanclient/ssr"
-	"schanclient/urls"
 	"schanclient/webdriver"
 )
 
@@ -30,16 +29,19 @@ func main() {
 	flag.Parse()
 
 	// 信号处理
-	ctxt, cancel := context.WithCancel(context.Background())
+	ctxt, AllocatorCancel := webdriver.NewHeadless()
+	defer AllocatorCancel()
+	c, cancel := chromedp.NewContext(ctxt)
 	defer cancel()
 	sig := make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGINT)
-	go func(cancel context.CancelFunc) {
+	go func(allocatorCancel, cancel context.CancelFunc) {
 		select {
 		case <-sig:
 			cancel()
+			allocatorCancel()
 		}
-	}(cancel)
+	}(AllocatorCancel, cancel)
 
 	// 获取配置
 	conf := new(config.UserConfig)
@@ -98,23 +100,18 @@ func main() {
 	}
 
 	// 查询信息
-	var c *chromedp.CDP
 	if *showInfo || *showUsed || *setNode != "" {
-		// 创建headless实例
-		c, err = webdriver.NewHeadless(ctxt, urls.RootPath)
-		if err != nil {
-			log.Fatalln("create headless chrome falled", err)
-		}
-
 		// 登录schannel
-		err = c.Run(ctxt, webdriver.GetSChannelAuth(conf.UserName, conf.Passwd))
+		err = chromedp.Run(ctxt, webdriver.GetSChannelAuth(conf.UserName, conf.Passwd))
 		if err != nil {
 			log.Fatalln(err.Error() + "GetSChannelAuth")
 		}
 
 		// 关闭chrome
 		defer func() {
-			err = c.Shutdown(ctxt)
+			cancel()
+			AllocatorCancel()
+			err = chromedp.FromContext(c).Browser.Shutdown()
 			if err != nil {
 				log.Fatalln(err.Error() + "shutdown")
 			}
@@ -125,12 +122,14 @@ func main() {
 	}
 
 	if *showInfo {
-		showServiceInfo(ctxt, c)
+		fmt.Println("show info")
+		showServiceInfo(c)
+		fmt.Println("info down")
 		return
 	}
 
 	if *showUsed {
-		showServiceUsed(ctxt, c)
+		showServiceUsed(c)
 		return
 	}
 
@@ -140,15 +139,15 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		setSSRNode(ctxt, c, *setNode, ssrconfpath)
+		setSSRNode(c, *setNode, ssrconfpath)
 		return
 	}
 }
 
-func showServiceInfo(ctxt context.Context, c *chromedp.CDP) {
+func showServiceInfo(ctxt context.Context) {
 	// run task list
 	var res string
-	err := c.Run(ctxt, webdriver.GetServiceList(&res))
+	err := chromedp.Run(ctxt, webdriver.GetServiceList(&res))
 	if err != nil {
 		log.Fatalln(err.Error() + "GetServiceList")
 	}
@@ -156,7 +155,7 @@ func showServiceInfo(ctxt context.Context, c *chromedp.CDP) {
 	arr := parser.GetService(res)
 	for _, v := range arr {
 		var data string
-		err = c.Run(ctxt, webdriver.GetDataPanel(v.Link, &data))
+		err = chromedp.Run(ctxt, webdriver.GetDataPanel(v.Link, &data))
 		if err != nil {
 			log.Fatalln(err.Error() + "GetDataPanel")
 		}
@@ -166,9 +165,9 @@ func showServiceInfo(ctxt context.Context, c *chromedp.CDP) {
 	}
 }
 
-func showServiceUsed(ctxt context.Context, c *chromedp.CDP) {
+func showServiceUsed(ctxt context.Context) {
 	var res string
-	err := c.Run(ctxt, webdriver.GetServiceList(&res))
+	err := chromedp.Run(ctxt, webdriver.GetServiceList(&res))
 	if err != nil {
 		log.Fatalln(err.Error() + "GetServiceList")
 	}
@@ -176,7 +175,7 @@ func showServiceUsed(ctxt context.Context, c *chromedp.CDP) {
 	arr := parser.GetService(res)
 	for _, v := range arr {
 		var data string
-		err = c.Run(ctxt, webdriver.GetDataPanel(v.Link, &data))
+		err = chromedp.Run(ctxt, webdriver.GetDataPanel(v.Link, &data))
 		if err != nil {
 			log.Fatalln(err.Error() + "GetDataPanel")
 		}
@@ -186,16 +185,16 @@ func showServiceUsed(ctxt context.Context, c *chromedp.CDP) {
 	}
 }
 
-func setSSRNode(ctxt context.Context, c *chromedp.CDP, nodename, path string) {
+func setSSRNode(ctxt context.Context, nodename, path string) {
 	var res string
-	err := c.Run(ctxt, webdriver.GetServiceList(&res))
+	err := chromedp.Run(ctxt, webdriver.GetServiceList(&res))
 	if err != nil {
 		log.Fatalln(err.Error() + "GetServiceList")
 	}
 
 	ser := parser.GetService(res)[0]
 	var data string
-	err = c.Run(ctxt, webdriver.GetDataPanel(ser.Link, &data))
+	err = chromedp.Run(ctxt, webdriver.GetDataPanel(ser.Link, &data))
 	if err != nil {
 		log.Fatalln(err.Error() + "GetDataPanel")
 	}

@@ -2,50 +2,26 @@ package webdriver
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/chromedp/chromedp"
-	"github.com/chromedp/chromedp/runner"
 
 	"schanclient/urls"
 )
 
-func dropChromeLogs(s string, v ...interface{}) {
-	return
-}
-
-func NewHeadless(ctx context.Context, starturl string) (*chromedp.CDP, error) {
-	select {
-	case <-ctx.Done():
-		return nil, errors.New("canceled")
-	default:
-		run, err := runner.New(runner.Flag("headless", true),
-			runner.URL(starturl),
-			runner.ProxyServer("http://127.0.0.1:8118"))
-
-		if err != nil {
-			return nil, err
-		}
-
-		err = run.Start(ctx)
-		if err != nil {
-			return nil, err
-		}
-		
-		c, err := chromedp.New(ctx, chromedp.WithRunner(run), chromedp.WithErrorf(dropChromeLogs))
-		if err != nil {
-			return nil, err
-		}
-
-		return c, nil
-	}
+func NewHeadless() (context.Context, context.CancelFunc) {
+	opts := make([]chromedp.ExecAllocatorOption, 0)
+	opts = append(opts, chromedp.ProxyServer("http://127.0.0.1:8118"))
+	opts = append(opts, chromedp.Flag("headless", true))
+	allocator, cancel := chromedp.NewAllocator(context.Background(), chromedp.WithExecAllocator(opts...))
+	return allocator, cancel
 }
 
 // 获得账户登录的cookie
 func GetSChannelAuth(user, passwd string) chromedp.Tasks {
 	return chromedp.Tasks{ // tasks就是一系列chrome动作的组合
 		// 访问URL
+		chromedp.Navigate(urls.RootPath),
 		chromedp.Navigate(urls.AuthPath),
 		// 输入form的email和password
 		chromedp.SendKeys("inputEmail", user, chromedp.ByID),
